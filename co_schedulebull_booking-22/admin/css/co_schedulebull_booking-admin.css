@@ -1,0 +1,65 @@
+/**
+ * All of the CSS for your admin-specific functionality should be
+ * included in this file.
+ */
+ 
+ .cos-meta_field {
+    width: 100%;
+    display: inline-block;
+    margin: 10px 0px;
+}
+.cos-meta_field label {
+    width: 100%;
+    display: block;
+}
+.cos-meta_field select, .cos-meta_field input {
+    width: 100%;
+}
+
+
+.cos-blockDatesSettings-Section, .cos-rateDatesSettings-Section {
+    width: 100%;
+}
+table.cos-blockDatesSettings, table.cos-rateDatesSettings {
+    width: 100%;
+    background: #fff;
+    padding: 15px;
+}
+tr.cos-DateRangeItem, tr.cos-RateDateRangeItem {
+    background: #f0f0f1;
+    border-bottom: 1px solid #000;
+    display: block;
+}
+table.cos-blockDatesSettings tr input, table.cos-rateDatesSettings tr input, table.cos-blockDatesSettings tr label, table.cos-rateDatesSettings tr label {
+    width: 100%;
+}
+tr.cos-DateRangeItem td, tr.cos-cos-RateDateRangeItem td {
+    padding: 10px 15px;
+}
+button#cos-AddDateRangeBtn, button#cos-AddRateDateRangeBtn {
+	float: right;
+    margin-top: 10px !IMPORTANT;
+    background: #2271b1;
+    border-color: #2271b1;
+    color: #fff;
+    text-decoration: none;
+    text-shadow: none;
+    font-size: 13px;
+    line-height: 2.15384615;
+    min-height: 30px;
+    margin: 0;
+    padding: 0 10px;
+    cursor: pointer;
+    border-width: 1px;
+    border-style: solid;
+    -webkit-appearance: none;
+    border-radius: 3px;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+.cos_t_field {
+    clear: both;
+    display: flex;
+    column-gap: 9px;
+    align-items: center;
+}
