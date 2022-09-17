@@ -207,8 +207,7 @@ class Co_schedulebull_booking_Public {
 	 * @since    1.0.0
 	 */
 	public function cos_api_get_routes( $find = '' ){
-	    $url_ = $this->cos_get_api_endpoint_url().'?key='.$this->cos_get_api_key().'&q=transphere%2Froutes&find='.$find;
-	    
+	    $url_ = $this->cos_get_api_endpoint_url().'?key='.$this->cos_get_api_key().'&q=transphere%2Froutes&find='.urlencode($find);
 	    return $this->cos_api_run( $url_ );
 	}
 	
@@ -219,8 +218,19 @@ class Co_schedulebull_booking_Public {
 	 */
 	public function cos_api_get_route_price( $route_id = '', $date_ = '' ){
 	    $url_ = $this->cos_get_api_endpoint_url().'?key='.$this->cos_get_api_key().'&q=transphere%2Froutes&id='.$route_id.'&date='.$date_;
-	    
 	    return $this->cos_api_run( $url_ );
+	}
+
+
+
+	/**
+	 * get routes price from api new by gaurav
+	 *
+	 * @since    1.0.0
+	 */
+	public function cos_api_get_route_price_new( $from = '', $to='', $date_ = '' ){
+	    $url_ = $this->cos_get_api_endpoint_url().'?key='.$this->cos_get_api_key().'&q=transphere%2FroutePrice&from='.urlencode($from).'&to='.urlencode($to).'&datetime='.$date_;
+		return $this->cos_api_run($url_);
 	}
 	
 	/**
@@ -230,13 +240,11 @@ class Co_schedulebull_booking_Public {
 	 */
 	public function cos_api_run( $url ) {
 	    $ch = curl_init();
-        
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_URL, $url);
         $result = curl_exec($ch);
         curl_close($ch);
-        
         $obj = json_decode($result);
 	    return $obj;
 	}
@@ -276,8 +284,7 @@ class Co_schedulebull_booking_Public {
 	                    $response['msg'] = 'No round routes found';
 	                }
 	                
-	            }
-	            else{
+	            }else{
 	                $response['status'] = 0;
 	                $response['msg'] = 'Please select place from and place to.';
 	            }
@@ -367,7 +374,7 @@ class Co_schedulebull_booking_Public {
 	    $response['price'] = 0;
 	    
 	    parse_str($_POST['booking_data'],$booking_data);
-	    
+	   
 	    
 	    if( isset( $booking_data['cos_booking_action_field'] )  ){
 	      //  if(wp_verify_nonce( $booking_data['cos_booking_action_field'], 'cos_booking_action' )){
@@ -376,22 +383,32 @@ class Co_schedulebull_booking_Public {
         	    $pessengers_remaining = ( $booking_data['adults_'] + $booking_data['childrens_'] ) % 8;
 	            
 	            $route_data__ = $this->cos_api_get_route_price( $booking_data['cos_route_id_one'], $booking_data['date_one'] );
+				
+				$new_route_data__ = $this->cos_api_get_route_price_new( $booking_data['place_from'], $booking_data['place_to'], $booking_data['date_one'] );
 	           
 	            if( !empty($route_data__) ){
 	                $route_data__ = json_decode(json_encode($route_data__), true);
-	                $r_price = $route_data__[$booking_data['cos_route_id_one']]['price'];
-            	     $response['hours']= $route_data__[$booking_data['cos_route_id_one']]['hours'];
+					$new_route_data__ = json_decode(json_encode($new_route_data__), true);
+					
+					$r_price = $new_route_data__['sum'];
+	                //$r_price = $route_data__[$booking_data['cos_route_id_one']]['price'];
+
+            	    $response['hours']= $route_data__[$booking_data['cos_route_id_one']]['hours'];
             	    if( $pessengers_group_count > 0){
             	        for($i = 0; $i < $pessengers_group_count; $i++){
             	            $response['price'] = round( ( $response['price'] + $r_price), 2);
             	        }
             	    }
-            	    
+					
+					
             	    if( $pessengers_remaining > 0 ){
             	        $response['price'] = round( ( $response['price'] + $r_price), 2);
             	    }
 	               
 	                $response['status'] = 1;
+					
+					
+					
 					
 					if( $booking_data['time_one'] != '' ){
 						if( !$this->cos_check_booking_blocked( $booking_data['date_one'], $booking_data['time_one'], $booking_data['place_from'], $booking_data['place_to'] ) ){
@@ -399,7 +416,7 @@ class Co_schedulebull_booking_Public {
 							$response['msg'] = 'Booking not available for selected time';
 						}
 						else{
-							$response['price'] = $this->cos_get_booking_price_change( $booking_data['date_one'], $booking_data['time_one'], $response['price'], $booking_data['place_from'], $booking_data['place_to'] );
+						$response['price'] = $this->cos_get_booking_price_change( $booking_data['date_one'], $booking_data['time_one'], $response['price'], $booking_data['place_from'], $booking_data['place_to'] );
 						}
 					}
 					
@@ -409,10 +426,14 @@ class Co_schedulebull_booking_Public {
 	            
 	            if( isset($booking_data['cos_route_id_round']) && $booking_data['cos_route_id_round'] != '' && isset($booking_data['date_round']) && $booking_data['date_round'] != '' ){
 	                $route_data__r = $this->cos_api_get_route_price( $booking_data['cos_route_id_round'], $booking_data['date_round'] );
+					$new_route_data__r = $this->cos_api_get_route_price_new( $booking_data['place_to'], $booking_data['place_from'], $booking_data['date_round'] );
+
 	              
     	            if( !empty($route_data__r) ){
     	                $route_data__r = json_decode(json_encode($route_data__r), true);
-    	                $r_price_r = $route_data__r[$booking_data['cos_route_id_round']]['price'];
+						$new_route_data__r = json_decode(json_encode($new_route_data__r), true);
+						$r_price_r = $new_route_data__r['sum'];
+						//$r_price_r = $route_data__r[$booking_data['cos_route_id_round']]['price'];
     	                $response['hours']= $route_data__r[$booking_data['cos_route_id_round']]['hours'];
     	                
     	                if( $pessengers_group_count > 0){
@@ -667,7 +688,10 @@ class Co_schedulebull_booking_Public {
 		}
 		$changed_price = round($changed_price, 2);
 		
-		return $changed_price;
+	//remove current admin price functionality	
+	//	return $changed_price;
+	$orignal_price = round($orignal_price, 2);
+	return $orignal_price;
 	}
 	
 	
@@ -812,7 +836,7 @@ class Co_schedulebull_booking_Public {
 	    
 	    $request_data['client'] = $form_data['cos_name'].' '.$form_data['cos_surname']; //varchar : client name and surname
 	    
-	    $request_data['telnr'] = $form_data['cos_mobile']; //varchar : client phone number
+	    $request_data['telnr'] = $form_data['cos_mobile_country_code'].' '.$form_data['cos_mobile']; //varchar : client phone number
 	    
 	    //$request_data['price'] = $form_data['cos_route_price_total']??0; //double : price of transfer
 	    
@@ -826,7 +850,7 @@ class Co_schedulebull_booking_Public {
 	    //$request_data['passengers'] = $form_data['adults_']; //int : passenger count
 	    $request_data['comment'] = $form_data['cos_email'].' [en]'; //text : comment in free form. If comment first line is in format "email+space+[+language+]", for example "test@example.com [en]", application will use it for integrated email sending in GUI.
 	    $request_data['comment'] .= ' | Hotel name and address: '.$form_data['cos_Hotel_name_address'];
-	    $request_data['comment'] .= ' | 2nd Mobile phone: '.$form_data['cos_mobile_second'];
+	    $request_data['comment'] .= ' | 2nd Mobile phone: '.$form_data['cos_S_mobile_country_code'].' '.$form_data['cos_mobile_second'];
 	    $request_data['comment'] .= ' | Luggage info: '.$form_data['cos_language'];
 	    $request_data['comment'] .= ' | Additional notes: '.$form_data['cos_additional_notes'];
 	     
@@ -850,9 +874,13 @@ class Co_schedulebull_booking_Public {
 	    $pessengers_remaining = ( $form_data['adults_'] + $form_data['childrens_']) % 8;
 	    
 	    $route_data__ = $this->cos_api_get_route_price( $form_data['cos_route_id_one'], $form_data['date_one'] );
+		$new_route_data__ = $this->cos_api_get_route_price_new( $form_data['place_from'], $form_data['place_to'], $form_data['date_one'] );
+
         if( !empty($route_data__) ){
             $route_data__ = json_decode(json_encode($route_data__), true);
-            $r_price_ = $route_data__[$form_data['cos_route_id_one']]['price'];
+			$new_route_data__ = json_decode(json_encode($new_route_data__), true);		
+			$r_price_ = $new_route_data__['sum'];
+           // $r_price_ = $route_data__[$form_data['cos_route_id_one']]['price'];
             $hours = $route_data__[$form_data['cos_route_id_one']]['hours'];
             $request_data['till'] = date("Y-m-d H:i:s", strtotime('+'.$hours.' hours',strtotime($request_data['from'])));
             $request_data['price'] = $r_price_;
@@ -901,9 +929,13 @@ class Co_schedulebull_booking_Public {
 	        $request_data['flightNr'] = $form_data['cos_Return_flight_number']??''; // varchar : flight number
 			
             $route_data__r = $this->cos_api_get_route_price( $form_data['cos_route_id_one'], $form_data['date_round'] );
-            if( !empty($route_data__r) ){
+			$new_route_data__r = $this->cos_api_get_route_price_new( $form_data['place_to'], $form_data['place_from'], $form_data['date_round'] );
+
+			if( !empty($route_data__r) ){
                 $route_data__r = json_decode(json_encode($route_data__r), true);
-                $r_price_r = $route_data__r[$form_data['cos_route_id_one']]['price'];
+				$new_route_data__r = json_decode(json_encode($new_route_data__r), true);
+				$r_price_r = $new_route_data__r['sum'];
+				//$r_price_r = $route_data__r[$form_data['cos_route_id_one']]['price'];
                  $hours = $route_data__r[$form_data['cos_route_id_one']]['hours'];
                 $request_data['price'] = $r_price_r;
 				
@@ -914,7 +946,8 @@ class Co_schedulebull_booking_Public {
 				
 				$request_data['price'] = $this->cos_get_booking_price_change( $form_data['date_round'], $form_data['time_round'], $request_data['price'], $form_data['place_from'], $form_data['place_to'] );
             }
-            
+			
+			            
 	        
 	        $request_data['from'] = date("Y-m-d H:i:s", strtotime($form_data['date_round'].' '.$form_data['time_round'])); //date and time of period start in format YYYY-MM-DD HH:MM:SS
 	    
@@ -1011,8 +1044,8 @@ class Co_schedulebull_booking_Public {
         <tr><th scope="row">Name: </th><td>'.$booking_form_data['cos_name'].'</td></tr>
         <tr><th scope="row">Surname: </th><td>'.$booking_form_data['cos_surname'].'</td></tr>
         <tr><th scope="row">Email: </th><td>'.$booking_form_data['cos_email'].'</td></tr>
-        <tr><th scope="row">Mobile phone: </th><td>'.$booking_form_data['cos_mobile'].'</td></tr>
-        <tr><th scope="row">2nd Mobile phone: </th><td>'.$booking_form_data['cos_mobile_second'].'</td></tr>
+        <tr><th scope="row">Mobile phone: </th><td>'.$booking_form_data['cos_mobile_country_code'].'-'.$booking_form_data['cos_mobile'].'</td></tr>
+        <tr><th scope="row">2nd Mobile phone: </th><td>'.$booking_form_data['cos_S_mobile_country_code'].'-'.$booking_form_data['cos_mobile_second'].'</td></tr>
         <tr><th scope="row">Luggage info: </th><td>'.$booking_form_data['cos_language'].'</td></tr>
         <tr><th scope="row">Additional notes: </th><td>'.$booking_form_data['cos_additional_notes'].'</td></tr>
         
